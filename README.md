@@ -19,7 +19,7 @@ local UICorner_3 = Instance.new("UICorner")
 ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
-print("Aimbot Menu Carregado")
+print("ESP Admin Carregado")
 
 Frame.Parent = ScreenGui
 Frame.BackgroundColor3 = Color3.fromRGB(34, 34, 34)
@@ -48,8 +48,8 @@ TextLabel.BorderSizePixel = 0
 TextLabel.Position = UDim2.new(0.1, 0, 0, 0)
 TextLabel.Size = UDim2.new(0, 120, 0, 25)
 TextLabel.Font = Enum.Font.Sarpanch
-TextLabel.Text = "Aimbot"
-TextLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+TextLabel.Text = "ESP Admin"
+TextLabel.TextColor3 = Color3.fromRGB(0, 150, 255) -- Azul claro
 TextLabel.TextSize = 18.000
 
 TextButton.Parent = Frame
@@ -68,57 +68,70 @@ UICorner_3.CornerRadius = UDim.new(0, 8)
 
 -- Scripts:
 
-local function AimbotScript() -- TextButton.LocalScript
+local function ESPScript() -- TextButton.LocalScript
     local script = Instance.new('LocalScript', TextButton)
 
     local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
     local LocalPlayer = Players.LocalPlayer
-    local isAimbotActive = false
+    local isESPActive = false
 
-    local function getNearestPlayer()
-        local closestPlayer = nil
-        local shortestDistance = math.huge
+    local function createHighlight(player)
+        if player == LocalPlayer then return end -- Ignora o próprio jogador
+        local character = player.Character or player.CharacterAdded:Wait()
         
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character then
-                local targetHRP = player.Character:FindFirstChild("HumanoidRootPart")
-                local localHRP = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                
-                if targetHRP and localHRP then
-                    local distance = (targetHRP.Position - localHRP.Position).Magnitude
-                    if distance < shortestDistance then
-                        closestPlayer = player
-                        shortestDistance = distance
-                    end
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "ESP_Highlight"
+        highlight.FillColor = Color3.fromRGB(0, 100, 255) -- Azul brilhante
+        highlight.OutlineColor = Color3.fromRGB(0, 200, 255) -- Azul neon
+        highlight.FillTransparency = 0.3
+        highlight.OutlineTransparency = 0
+        highlight.Parent = character
+    end
+
+    local function removeHighlight(player)
+        local character = player.Character
+        if character then
+            for _, child in pairs(character:GetChildren()) do
+                if child.Name == "ESP_Highlight" then
+                    child:Destroy()
                 end
             end
         end
-        return closestPlayer
     end
 
     TextButton.MouseButton1Click:Connect(function()
-        isAimbotActive = not isAimbotActive
-        TextButton.Text = isAimbotActive and "ON" or "OFF"
+        isESPActive = not isESPActive
+        TextButton.Text = isESPActive and "ON" or "OFF"
 
-        if isAimbotActive then
-            RunService.RenderStepped:Connect(function()
-                if isAimbotActive then
-                    local target = getNearestPlayer()
-                    if target and target.Character then
-                        local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
-                        local localHRP = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        
-                        if targetHRP and localHRP then
-                            localHRP.CFrame = CFrame.new(localHRP.Position, targetHRP.Position)
-                        end
-                    end
+        if isESPActive then
+            -- Ativa o ESP para todos os jogadores
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer then
+                    createHighlight(player)
                 end
+            end
+        else
+            -- Desativa o ESP
+            for _, player in pairs(Players:GetPlayers()) do
+                removeHighlight(player)
+            end
+        end
+    end)
+
+    -- Atualiza o ESP quando um jogador entra/sai
+    Players.PlayerAdded:Connect(function(player)
+        if isESPActive then
+            player.CharacterAdded:Connect(function()
+                createHighlight(player)
             end)
         end
     end)
+
+    Players.PlayerRemoving:Connect(function(player)
+        removeHighlight(player)
+    end)
 end
-coroutine.wrap(AimbotScript)()
+coroutine.wrap(ESPScript)()
 
 local function DragScript() -- Frame.LocalScript
     local script = Instance.new('LocalScript', Frame)
